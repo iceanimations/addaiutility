@@ -33,6 +33,8 @@ def doTheMagic():
             attr = aiSh.color.inputs(plugs=True)[0]
         except:
             aiUtility.color.set(aiSh.color.get())
+        if attr:
+            attr.connect(aiUtility.color)
         aiUtility.shadeMode.set(2)
         for sg in aiSh.connections(type=pc.nt.ShadingEngine):
             pc.sets(utilsg, fe=pc.sets(sg, q=True))
