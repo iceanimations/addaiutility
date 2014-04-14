@@ -27,8 +27,8 @@ def doTheMagic():
                 try:
                     ai = mc.listConnections(sg +'.surfaceShader')[0]
                 except: continue
-                if type(pc.PyNode(ai)) == pc.nt.AiStandard:
-                    aiShaders.add(ai)
+                #if type(pc.PyNode(ai)) == pc.nt.AiStandard:
+                aiShaders.add(ai)
     for aiSh in aiShaders:
         aiUtility = str(pc.Mel.eval('createRenderNodeCB -asShader "surfaceShader" aiUtility ""'))
         utilsg = mc.listConnections(aiUtility, type='shadingEngine')[0]
