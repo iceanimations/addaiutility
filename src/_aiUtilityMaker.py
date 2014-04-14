@@ -5,39 +5,50 @@ Created on Apr 8, 2014
 '''
 
 import pymel.core as pc
+import maya.cmds as mc
 
 def doTheMagic():
-    currentLayer = pc.PyNode(pc.editRenderLayerGlobals(currentRenderLayer=True, q=True))
-    objects = currentLayer.listMembers()
+    currentLayer = mc.editRenderLayerGlobals(currentRenderLayer=True, q=True)
+    objects = mc.editRenderLayerMembers(currentLayer, q=True, noRecurse=True)
     if not objects:
         pc.warning("No objects found in the selected layer")
         return
-    
-    newLayer = pc.createRenderLayer(objects, name='layer', noRecurse=True)
-    pc.editRenderLayerGlobals(currentRenderLayer=newLayer)
-    
-    meshes = pc.ls(objects, dag=True, type='mesh')
+     
+    newLayer = mc.createRenderLayer(objects, name='newLayer', noRecurse=True)
+    mc.editRenderLayerGlobals(currentRenderLayer=newLayer)
+
+    meshes = mc.ls(objects, dag=True, type='mesh')
     aiShaders = set()
     for mesh in meshes:
-        sgs = mesh.connections(type=pc.nt.ShadingEngine)
-        for sg in sgs:
-            try:
-                ai = sg.surfaceShader.inputs()[0]
-            except: continue
-            aiShaders.add(ai)
+        sgs = mc.listConnections(mesh, type='shadingEngine')
+        if sgs:
+            sgs = set(sgs)
+            for sg in sgs:
+                try:
+                    ai = mc.listConnections(sg +'.surfaceShader')[0]
+                except: continue
+                if type(pc.PyNode(ai)) == pc.nt.AiStandard:
+                    aiShaders.add(ai)
     for aiSh in aiShaders:
-        aiUtility = pc.PyNode(pc.Mel.eval('createRenderNodeCB -asShader "surfaceShader" aiUtility ""'))
-        utilsg = aiUtility.connections(type=pc.nt.ShadingEngine)[0]
-        attr = None
+        aiUtility = str(pc.Mel.eval('createRenderNodeCB -asShader "surfaceShader" aiUtility ""'))
+        utilsg = mc.listConnections(aiUtility, type='shadingEngine')[0]
         try:
-            attr = aiSh.color.inputs(plugs=True)[0]
-        except:
-            aiUtility.color.set(aiSh.color.get())
-        if attr:
-            attr.connect(aiUtility.color)
-        aiUtility.shadeMode.set(2)
-        for sg in aiSh.connections(type=pc.nt.ShadingEngine):
-            pc.sets(utilsg, fe=pc.sets(sg, q=True))
-            
-    
-    
+            mc.connectAttr(mc.listConnections(aiSh + '.color')[0] +'.outColor', aiUtility + '.color', f=True)
+        except IndexError:
+            mc.setAttr(aiUtility +'.color', mc.getAttr(aiSh +'.color'))
+        except AttributeError:
+            pass
+        except: pass
+        mc.setAttr(aiUtility +'.shadeMode', 2)
+        for sg in mc.listConnections(aiSh, type='shadingEngine'):
+            temp = []
+            members = mc.sets(sg, q=True)
+            if members:
+                for mem in members:
+                    try:
+                        temp.append(pc.PyNode(mem))
+                    except: pass
+            try:
+                pc.sets(pc.PyNode(utilsg), e=True, fe=temp)
+            except:
+                pass
