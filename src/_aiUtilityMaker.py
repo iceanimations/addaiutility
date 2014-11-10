@@ -17,7 +17,11 @@ def doTheMagic():
 #    newLayer = mc.createRenderLayer(objects, name='newLayer', noRecurse=True)
 #    mc.editRenderLayerGlobals(currentRenderLayer=newLayer)
 
-    meshes = mc.ls(objects, dag=True, type='mesh')
+    meshes = set()
+    for obj in objects:
+        try:
+            meshes.add(mc.ls(obj, dag=True, type='mesh'))
+        except: pass
     aiShaders = set()
     for mesh in meshes:
         sgs = mc.listConnections(mesh, type='shadingEngine')
