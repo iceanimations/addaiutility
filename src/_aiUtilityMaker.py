@@ -10,12 +10,12 @@ import maya.cmds as mc
 def doTheMagic():
     currentLayer = mc.editRenderLayerGlobals(currentRenderLayer=True, q=True)
     objects = mc.editRenderLayerMembers(currentLayer, q=True, noRecurse=True)
-    if not objects:
-        pc.warning("No objects found in the selected layer")
-        return
-     
-    newLayer = mc.createRenderLayer(objects, name='newLayer', noRecurse=True)
-    mc.editRenderLayerGlobals(currentRenderLayer=newLayer)
+#     if not objects:
+#         pc.warning("No objects found in the selected layer")
+#         return
+
+#    newLayer = mc.createRenderLayer(objects, name='newLayer', noRecurse=True)
+#    mc.editRenderLayerGlobals(currentRenderLayer=newLayer)
 
     meshes = mc.ls(objects, dag=True, type='mesh')
     aiShaders = set()
@@ -27,7 +27,7 @@ def doTheMagic():
                 try:
                     ai = mc.listConnections(sg +'.surfaceShader')[0]
                 except: continue
-                #if type(pc.PyNode(ai)) == pc.nt.AiStandard:
+            if type(pc.PyNode(ai)) == pc.nt.AiStandard:
                 aiShaders.add(ai)
     for aiSh in aiShaders:
         aiUtility = str(pc.Mel.eval('createRenderNodeCB -asShader "surfaceShader" aiUtility ""'))
@@ -36,8 +36,6 @@ def doTheMagic():
             mc.connectAttr(mc.listConnections(aiSh + '.color')[0] +'.outColor', aiUtility + '.color', f=True)
         except IndexError:
             mc.setAttr(aiUtility +'.color', mc.getAttr(aiSh +'.color'))
-        except AttributeError:
-            pass
         except: pass
         mc.setAttr(aiUtility +'.shadeMode', 2)
         for sg in mc.listConnections(aiSh, type='shadingEngine'):
