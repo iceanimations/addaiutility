@@ -5,6 +5,9 @@ Created on Apr 8, 2014
 '''
 
 import pymel.core as pc
+import site
+site.addsitedir(r'R:\Pipe_Repo\Users\Qurban\utilities')
+import appUsageApp
 
 def getFlatDiffuseIndex(sg):
     for i in sg.aiCustomAOVs.getArrayIndices():
@@ -41,6 +44,8 @@ def doTheMagic():
         try:
             aiSh.color.inputs(plugs=True)[0].connect(aiUtility.color, f=True)
         except IndexError:
-            pass
+            aiUtility.color.set(aiSh.color.get())
         aiUtility.shadeMode.set(2)
         pc.rename(aiUtility, '_'.join([aiSh.name().split(':')[-1].split('|')[-1], 'aiUtility']))
+        
+    appUsageApp.updateDatabase('AddAiUtility')
