@@ -1,3 +1,3 @@
-import src._aiUtilityMaker as maker
-reload(maker)
-add = maker.doTheMagic
+import src._aiUtilityMaker as aiuMaker
+reload(aiuMaker)
+add = aiuMaker.doTheMagic

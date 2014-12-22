@@ -17,6 +17,9 @@ def doTheMagic():
     except AttributeError:
         pc.confirmDialog(title="Error", message="It seems like Arnold is not loaded or installed", button="Ok")
         return
+    if not arnolds:
+        pc.confirmDialog(title="Error", message="No selection found in the scene", button="Ok")
+        return
     try:
         value = getFlatDiffuseIndex(pc.ls(type=pc.nt.ShadingEngine)[0])
         if value is not None:
@@ -40,3 +43,4 @@ def doTheMagic():
         except IndexError:
             pass
         aiUtility.shadeMode.set(2)
+        pc.rename(aiUtility, '_'.join([aiSh.name().split(':')[-1].split('|')[-1], 'aiUtility']))
