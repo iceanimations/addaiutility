@@ -5,48 +5,38 @@ Created on Apr 8, 2014
 '''
 
 import pymel.core as pc
-import maya.cmds as mc
+
+def getFlatDiffuseIndex(sg):
+    for i in sg.aiCustomAOVs.getArrayIndices():
+        if 'flat_diffuse' in sg.aiCustomAOVs[i].get():
+            return i
 
 def doTheMagic():
-    currentLayer = pc.editRenderLayerGlobals(currentRenderLayer=True, q=True)
-    objects = pc.editRenderLayerMembers(currentLayer, q=True, noRecurse=True)
-#     if not objects:
-#         pc.warning("No objects found in the selected layer")
-#         return
-
-#    newLayer = mc.createRenderLayer(objects, name='newLayer', noRecurse=True)
-#    mc.editRenderLayerGlobals(currentRenderLayer=newLayer)
-
-    meshes = pc.ls(type='mesh')
-    aiShaders = set()
-    for mesh in meshes:
-        sgs = pc.listConnections(mesh, type='shadingEngine')
-        if sgs:
-            sgs = set(sgs)
-            for sg in sgs:
-                try:
-                    ai = pc.listConnections(sg +'.surfaceShader')[0]
-                except: continue
-            if type(pc.PyNode(ai)) == pc.nt.AiStandard:
-                aiShaders.add(ai)
-    for aiSh in aiShaders:
+    try:
+        arnolds = pc.ls(sl=True, type=pc.nt.AiStandard)
+    except AttributeError:
+        pc.confirmDialog(title="Error", message="It seems like Arnold is not loaded or installed", button="Ok")
+        return
+    try:
+        value = getFlatDiffuseIndex(pc.ls(type=pc.nt.ShadingEngine)[0])
+        if value is not None:
+            pass
+        else:
+            pc.confirmDialog(title="Error", message="No AOV named \"flat_diffuse\" found in the scene", button="Ok")
+            return
+    except IndexError:
+        pc.confirmDialog(title="Error", message="No Shading engine found in the scene", button="Ok")
+        return
+    for aiSh in arnolds:
         aiUtility = str(pc.Mel.eval('createRenderNodeCB -asShader "surfaceShader" aiUtility ""'))
-        utilsg = pc.listConnections(aiUtility, type='shadingEngine')[0]
-        try:
-            pc.connectAttr(pc.listConnections(aiSh + '.color')[0] +'.outColor', aiUtility + '.color', f=True)
-        except IndexError:
-            pc.setAttr(aiUtility +'.color', pc.getAttr(aiSh +'.color'))
-        except: pass
-        pc.setAttr(aiUtility +'.shadeMode', 2)
+        aiUtility = pc.PyNode(aiUtility)
+        utilsg = pc.listConnections(aiUtility, type='shadingEngine')
+        for sg in utilsg:
+            pc.delete(sg)
         for sg in pc.listConnections(aiSh, type='shadingEngine'):
-            temp = []
-            members = pc.sets(sg, q=True)
-            if members:
-                for mem in members:
-                    try:
-                        temp.append(pc.PyNode(mem))
-                    except: pass
-            try:
-                pc.sets(pc.PyNode(utilsg), e=True, fe=temp)
-            except:
-                pass
+            aiUtility.outColor.connect(sg.aiCustomAOVs[getFlatDiffuseIndex(sg)].aovInput, f=True)
+        try:
+            aiSh.color.inputs(plugs=True)[0].connect(aiUtility.color, f=True)
+        except IndexError:
+            pass
+        aiUtility.shadeMode.set(2)
