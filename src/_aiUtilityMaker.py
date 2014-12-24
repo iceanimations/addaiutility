@@ -34,18 +34,18 @@ def doTheMagic():
         pc.confirmDialog(title="Error", message="No Shading engine found in the scene", button="Ok")
         return
     for aiSh in arnolds:
-        aiUtility = str(pc.Mel.eval('createRenderNodeCB -asShader "surfaceShader" aiUtility ""'))
-        aiUtility = pc.PyNode(aiUtility)
-        utilsg = pc.listConnections(aiUtility, type='shadingEngine')
-        for sg in utilsg:
-            pc.delete(sg)
+        aiUtility = pc.shadingNode(pc.nt.AiUtility, asShader=1)
         for sg in pc.listConnections(aiSh, type='shadingEngine'):
             aiUtility.outColor.connect(sg.aiCustomAOVs[getFlatDiffuseIndex(sg)].aovInput, f=True)
         try:
             aiSh.color.inputs(plugs=True)[0].connect(aiUtility.color, f=True)
         except IndexError:
             aiUtility.color.set(aiSh.color.get())
+        try:
+            aiSh.opacity.inputs()[0].outAlpha.connect(aiUtility.opacity, f=True)
+        except IndexError:
+            aiUtility.opacity.set(aiSh.opacity.get())
         aiUtility.shadeMode.set(2)
         pc.rename(aiUtility, '_'.join([aiSh.name().split(':')[-1].split('|')[-1], 'aiUtility']))
-        
+
     appUsageApp.updateDatabase('AddAiUtility')
